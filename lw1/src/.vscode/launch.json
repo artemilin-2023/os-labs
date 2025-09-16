@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug lcma (MSVC)",
+        "type": "cppvsdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/build/Debug/lcma.exe",
+        "args": ["-c", "C:\\Users\\LightChimera\\Desktop\\Лабы\\os\\lw1\\src\\build\\Debug", "-o", "C:\\Users\\LightChimera\\Desktop\\Лабы\\os\\lw1\\src\\build\\Debug\\out.lcma"],
+        "cwd": "${workspaceFolder}"
+      }
+    ]
+}
