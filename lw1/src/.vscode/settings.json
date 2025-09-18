@@ -1,6 +1,9 @@
 {
     "files.associations": {
         "fileutils.h": "c",
-        "constants.h": "c"
+        "constants.h": "c",
+        "stdlib.h": "c",
+        "stdio.h": "c",
+        "file_metadata.h": "c"
     }
 }

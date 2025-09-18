@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include "constants.h"
 #include "fileutils.h"
+#include "stdlib.h"
+
+int read_metadata(FILE *in, lcma_file_metadata_t *m);
 
 int archive_extract(const char *archive_path, const char *output_dir, const char *password) {
 	(void)password;
@@ -22,13 +25,13 @@ int archive_extract(const char *archive_path, const char *output_dir, const char
 		return FAIL_INVALID_MAGIC_NUMBER;
 	}
 
-	ensure_directory_exists(output_dir);
+	create_dirs(output_dir);
 
 	lcma_file_metadata_t *metadatas = malloc(hdr.file_count * sizeof(lcma_file_metadata_t));
 	for (int i = 0; i < hdr.file_count; i++)
 	{
 		lcma_file_metadata_t file_metadata = {0};
-		if (read_metadata(in, &file_metadata) != TRUE)
+		if (read_metadata(in, &file_metadata) != SUCCESS)
 		{
 			for (int j = 0; j < i; j++) {
 				free(metadatas[j].name);
@@ -43,7 +46,7 @@ int archive_extract(const char *archive_path, const char *output_dir, const char
 
 	for (int i = 0; i < hdr.file_count; i++)
 	{
-		char *file_output = join_path(output_dir, metadatas[i].name); 
+		const char *file_output = join_path(output_dir, metadatas[i].name);
 		if (!file_output) {
 			for (int j = 0; j < hdr.file_count; j++) {
 				free(metadatas[j].name);
@@ -53,6 +56,7 @@ int archive_extract(const char *archive_path, const char *output_dir, const char
 			return FAIL_CANT_READ_DATA;
 		}
 		
+		create_dirs(file_output);
 		FILE *out = fopen(file_output, "wb");
 		if (!out) {
 			free(file_output);
@@ -64,14 +68,27 @@ int archive_extract(const char *archive_path, const char *output_dir, const char
 			return FAIL_CANT_OPEN_FILE;
 		}
 		
-		stream_copy(in, out);
+		size_t size = metadatas[i].size;
+		char buffer[4096];
+		while (size > 0)
+		{
+			// читаем не больше, чем осталось или размер буфера
+			size_t to_read = (size < sizeof(buffer))
+				? size
+				: sizeof(buffer);
+
+			size_t readed = fread(buffer, 1, to_read, in);
+			if (readed == 0)
+				break;
+
+			fwrite(buffer, 1, readed, out);
+			size -= readed;
+		}
+
 		fclose(out);
 		free(file_output);
 	}
 
-	for (int i = 0; i < hdr.file_count; i++) {
-		free(metadatas[i].name);
-	}
 	free(metadatas);
 	fclose(in);
 	return SUCCESS;
@@ -81,20 +98,17 @@ int read_metadata(FILE *in, lcma_file_metadata_t *m) {
     if (fread(&m->name_length, sizeof(m->name_length), 1, in) != 1)
 		return FAIL_CANT_READ_DATA;
 
-    char *name = malloc(m->name_length + 1);
-    if (!name) return FAIL_CANT_READ_DATA;
+	if (fread(&m->size, sizeof(m->size), 1, in) != 1)
+		return FAIL_CANT_READ_DATA;
 
-    if (fread(name, 1, m->name_length, in) != m->name_length) {
-        free(name);
+    m->name = malloc(m->name_length + 1);
+    if (!m->name) return FAIL_CANT_READ_DATA;
+
+    if (fread(m->name, 1, m->name_length, in) != m->name_length) {
+        free(m->name);
         return FAIL_CANT_READ_DATA;
     }
-    name[m->name_length] = '\0';
-	m->name = name;
-
-	if (fread(&m->size, sizeof(m->size), 1, in) != 1) {
-		free(name);
-		return FAIL_CANT_READ_DATA;
-	}
+    m->name[m->name_length] = '\0';
 
     return SUCCESS;
 }

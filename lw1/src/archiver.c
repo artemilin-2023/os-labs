@@ -74,10 +74,22 @@ static int fill_file_metadata(const char *file_path, void *args) {
     
 	lcma_file_metadata_t metadata = {0};
     metadata.name_length = strlen(relative_path);
-    metadata.name = relative_path;
     metadata.size = get_file_size(input);
+    metadata.name = relative_path;
 
-	if (fwrite(&metadata, sizeof(metadata), 1, out) != TRUE)
+	if (fwrite(&metadata.name_length, sizeof(metadata.name_length), 1, out) != TRUE)
+	{
+		fclose(input);
+		return FAIL_CANT_WRITE_DATA;
+	}
+
+	if (fwrite(&metadata.size, sizeof(metadata.size), 1, out) != 1)
+	{
+		fclose(input);
+		return FAIL_CANT_WRITE_DATA;
+	}
+
+	if (fwrite(relative_path, sizeof(char), metadata.name_length, out) != metadata.name_length)
 	{
 		fclose(input);
 		return FAIL_CANT_WRITE_DATA;

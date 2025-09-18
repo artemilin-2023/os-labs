@@ -53,6 +53,7 @@ int main(int argc, char **argv) {
 		rc = archive_extract(extract, outdir, pw.data);
 	}
 	password_destroy(&pw);
+	printf("done");
 	return rc == 0 ? 0 : 1;
 }
 

@@ -35,6 +35,30 @@ int ensure_directory_exists(const char *path) {
 #endif
 }
 
+int create_dirs(const char *path) {
+    char tmp[1024];
+    char *p = NULL;
+    size_t len;
+
+    snprintf(tmp, sizeof(tmp), "%s", path);
+    len = strlen(tmp);
+
+    if(tmp[len - 1] == '\\' || tmp[len - 1] == '/')
+        tmp[len - 1] = 0;
+
+    for(p = tmp + 1; *p; p++) {
+        if(*p == '\\' || *p == '/') {
+            *p = 0;
+            if(ensure_directory_exists(tmp) != 0) {
+                return -1;
+            }
+            *p = PATH_SEP;
+        }
+    }
+
+    return 0;
+}
+
 int get_file_count(const char *root) {
 	int count = 0;
 	walk_directory(root, counter_cb, &count);

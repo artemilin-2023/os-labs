@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 int ensure_directory_exists(const char *path);
+int create_dirs(const char *path);
 
 typedef int (*file_visit_cb)(const char *path, void *user_data);
 int walk_directory(const char *root, file_visit_cb cb, void *user_data);
