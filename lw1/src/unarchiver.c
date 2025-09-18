@@ -2,20 +2,20 @@
 #include "archive_format.h"
 #include "file_metadata.h"
 #include <stdio.h>
+#include <string.h>
 #include "constants.h"
 #include "fileutils.h"
 #include "stdlib.h"
+#include "password.h"
 
 int read_metadata(FILE *in, lcma_file_metadata_t *m);
 
-int archive_extract(const char *archive_path, const char *output_dir, const char *password) {
-	(void)password;
-
+int archive_extract(const char *archive_path, const char *output_dir, const lcma_password_t *password) {
 	FILE *in = fopen(archive_path, "rb");
 	if (!in) return FAIL_CANT_OPEN_FILE;
 
 	lcma_archive_header_t hdr = {0};
-	if (fread(&hdr, sizeof(hdr), 1, in) != TRUE) {
+	if (fread(&hdr, sizeof(hdr), 1, in) != 1) {
 		fclose(in);
 		return FAIL_CANT_READ_DATA;
 	}
@@ -23,6 +23,39 @@ int archive_extract(const char *archive_path, const char *output_dir, const char
 	if (hdr.magic != LCMA_MAGIC) {
 		fclose(in);
 		return FAIL_INVALID_MAGIC_NUMBER;
+	}
+
+	size_t pass_len;
+	if (fread(&pass_len, sizeof(pass_len), 1, in) != 1)
+	{
+		fclose(in);
+		return FAIL_INVALID_HEADER;
+	}
+	
+	char *readed_password = malloc(pass_len + 1);
+	if (fread(readed_password, 1, pass_len, in) != pass_len)
+	{
+		fclose(in);
+		return FAIL_INVALID_HEADER;
+	}
+	readed_password[pass_len] = '\0';
+	if (hdr.flags & LCMA_FLAG_PASSWORD)
+	{
+		if (!password || !password->data)
+		{
+			printf("password required but not provided\n");
+			free(readed_password);
+			fclose(in);
+			return FAIL_INVALID_PASSWORD;
+		}
+		
+		if (strcmp(password->data, readed_password) != 0)
+		{
+			printf("invalid password\n");
+			free(readed_password);
+			fclose(in);
+			return FAIL_INVALID_PASSWORD;
+		}
 	}
 
 	create_dirs(output_dir);
@@ -38,7 +71,7 @@ int archive_extract(const char *archive_path, const char *output_dir, const char
 			}
 			fclose(in);
 			free(metadatas);
-			return FAIL_INVALID_ARCHIVE_PAYLOAD;
+			return FAIL_INVALID_HEADER;
 		}
 		
 		metadatas[i] = file_metadata;
@@ -89,7 +122,11 @@ int archive_extract(const char *archive_path, const char *output_dir, const char
 		free(file_output);
 	}
 
+	for (int i = 0; i < hdr.file_count; i++) {
+		free(metadatas[i].name);
+	}
 	free(metadatas);
+	free(readed_password);
 	fclose(in);
 	return SUCCESS;
 }

@@ -4,6 +4,8 @@
         "constants.h": "c",
         "stdlib.h": "c",
         "stdio.h": "c",
-        "file_metadata.h": "c"
+        "file_metadata.h": "c",
+        "password.h": "c",
+        "stddef.h": "c"
     }
 }

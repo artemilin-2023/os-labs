@@ -47,10 +47,10 @@ int main(int argc, char **argv) {
 	lcma_password_t pw; password_init(&pw, pass);
 	if (input) {
 		if (!archive) { print_usage(argv[0]); return 1; }
-		rc = archive_create(input, archive, pw.data);
+		rc = archive_create(input, archive, &pw);
 	} else {
 		if (!outdir) { print_usage(argv[0]); return 1; }
-		rc = archive_extract(extract, outdir, pw.data);
+		rc = archive_extract(extract, outdir, &pw);
 	}
 	password_destroy(&pw);
 	printf("done");

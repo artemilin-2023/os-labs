@@ -8,8 +8,9 @@
 
 // Флаги архива
 enum lcma_archive_flags {
-	LCMA_FLAG_PASSWORD = 1u << 0,
-	LCMA_FLAG_COMPRESSED = 1u << 1
+	LCMA_FLAG_NONE = 1u,
+	LCMA_FLAG_PASSWORD = 1u << 1,
+	LCMA_FLAG_COMPRESSED = 1u << 2
 };
 
 // Заголовок архива
@@ -18,7 +19,6 @@ typedef struct lcma_archive_header_s {
 	uint16_t version;      	// версия формата
 	uint16_t flags;         // флаги
 	uint32_t file_count;    // количество файлов внутри
-	uint32_t reserved;      // выравнивание/резерв
 } lcma_archive_header_t;
 
 // Параметры шифрования (не факт что сделаю)

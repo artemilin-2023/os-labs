@@ -5,8 +5,9 @@
 #include "file_metadata.h"
 #include "constants.h"
 #include "streamutils.h"
+#include "password.h"
 
-static int fill_archive_header(const char *input_path, FILE *out);
+static int fill_archive_header(const char *input_path, FILE *out, const lcma_password_t *password);
 static int fill_file_metadata(const char *file_path, void *args);
 static int fill_payload(const char *input_path, FILE *out);
 static int fill_payload_file_process(const char *file_path, void *args);
@@ -16,21 +17,11 @@ typedef struct {
     const char *input_path;
 } file_process_dto;
 
-// input: C:\Users\LightChimera\Desktop
-//
-// files: C:\Users\LightChimera\Desktop\text.txt
-// files: C:\Users\LightChimera\Desktop\bebra\text2.txt
-//
-// rel: text.txt
-// rel: bebra\text2.txt
-
-int archive_create(const char *input_path, const char *archive_path, const char *password) {
-	(void)password; // TODO: использовать при шифровании
-
+int archive_create(const char *input_path, const char *archive_path, const lcma_password_t *password) {
 	FILE *out = fopen(archive_path, "wb");
 	if (!out) return FAIL_CANT_OPEN_FILE;
 
-    int fillHeaderResult = fill_archive_header(input_path, out);
+    int fillHeaderResult = fill_archive_header(input_path, out, password);
 	if (fillHeaderResult != SUCCESS)
 	{
 		fclose(out);
@@ -43,18 +34,35 @@ int archive_create(const char *input_path, const char *archive_path, const char 
 	return fill_payload_result;
 }
 
-static int fill_archive_header(const char *input_path, FILE *out)
+static int fill_archive_header(const char *input_path, FILE *out, const lcma_password_t *password)
 {
     lcma_archive_header_t hdr = {0};
     hdr.magic = LCMA_MAGIC;
     hdr.version = LCMA_VERSION;
+	hdr.flags = LCMA_FLAG_NONE;
     hdr.file_count = get_file_count(input_path);
 
-    if (fwrite(&hdr, sizeof(hdr), 1, out) != TRUE)
+	if (password && password->length > 0)
+		hdr.flags |= LCMA_FLAG_PASSWORD;
+
+    if (fwrite(&hdr, sizeof(hdr), 1, out) != 1)
     {
         fclose(out);
         return FAIL_CANT_WRITE_DATA;
     }
+
+	size_t pwd_len = password ? password->length : 0;
+	if (fwrite(&pwd_len, sizeof(pwd_len), 1, out) != 1)
+	{
+		fclose(out);
+		return FAIL_CANT_WRITE_DATA;
+	}
+
+	if (pwd_len > 0 && fwrite(password->data, sizeof(char), pwd_len, out) != pwd_len)
+	{
+		fclose(out);
+		return FAIL_CANT_WRITE_DATA;
+	}
 
     file_process_dto dto = {
         .out = out,
@@ -119,10 +127,4 @@ static int fill_payload_file_process(const char *file_path, void *args)
 
 	fclose(input);
 	return SUCCESS;
-}
-
-int archive_add_file(const char *archive_path, const char *file_path) {
-	(void)archive_path;
-	(void)file_path;
-	return 0;
 }
