@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 
 int ensure_directory_exists(const char *path);
 
@@ -11,4 +13,5 @@ int get_file_count(const char *root);
 
 uint64_t get_file_size(FILE *file);
 
-char *get_relative_path(const char *root, const char *path);
+const char *get_relative_path(const char *root, const char *path);
+const char *join_path(const char *p1, const char *p2);

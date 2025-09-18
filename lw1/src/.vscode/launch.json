@@ -6,7 +6,7 @@
         "type": "cppvsdbg",
         "request": "launch",
         "program": "${workspaceFolder}/build/Debug/lcma.exe",
-        "args": ["-c", "C:\\Users\\LightChimera\\Desktop\\Лабы\\os\\lw1\\src\\build\\Debug", "-o", "C:\\Users\\LightChimera\\Desktop\\Лабы\\os\\lw1\\src\\build\\Debug\\out.lcma"],
+        "args": ["-x", "C:\\Users\\LightChimera\\Desktop\\Лабы\\os\\lw1\\src\\build\\out.lcma", "-d", "C:\\Users\\LightChimera\\Desktop\\Лабы\\os\\lw1\\src\\build\\output"],
         "cwd": "${workspaceFolder}"
       }
     ]

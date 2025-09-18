@@ -15,19 +15,25 @@
 #include <string.h>
 #include <stdint.h>
 
+#ifdef _WIN32
+    #define PATH_SEP '\\'
+#else
+    #define PATH_SEP '/'
+#endif
+
+int counter_cb(const char *path, void *user_data);
+
+
 int ensure_directory_exists(const char *path) {
 #ifdef _WIN32
-	// Создаём директорию, игнорируя ошибку "уже существует"
 	if (_mkdir(path) == 0) return 0;
-	return 0; // упрощённо
+	return 0;
 #else
 	if (mkdir(path, 0755) == 0) return 0;
 	if (errno == EEXIST) return 0;
 	return -1;
 #endif
 }
-
-int counter_cb(const char *path, void *user_data);
 
 int get_file_count(const char *root) {
 	int count = 0;
@@ -48,9 +54,35 @@ uint64_t get_file_size(FILE *file) {
 	return size;
 }
 
-char *get_relative_path(const char *root, const char *path)
+const char *get_relative_path(const char *root, const char *path)
 {
-	return path + strlen(root);
+	// пропускаем корень и убираем разделитель
+	if (strlen(path) == strlen(root))
+		return ".";
+	return path + strlen(root) + 1;
+}
+
+const char *join_path(const char *p1, const char *p2) {
+	size_t len1 = strlen(p1);
+    size_t len2 = strlen(p2);
+
+    while (len1 > 0 && (p1[len1 - 1] == '/' || p1[len1 - 1] == '\\')) {
+        len1--;
+    }
+    while (*p2 == '/' || *p2 == '\\') {
+        p2++;
+        len2--;
+    }
+
+    char *res = malloc(len1 + 1 + len2 + 1);
+    if (!res) return NULL;
+
+    memcpy(res, p1, len1);
+    res[len1] = PATH_SEP;
+    memcpy(res + len1 + 1, p2, len2);
+    res[len1 + 1 + len2] = '\0';
+
+    return res;
 }
 
 int walk_directory(const char *root, file_visit_cb cb, void *user_data) {

@@ -1,0 +1,11 @@
+#pragma once
+
+#define TRUE 1
+#define FALSE 0
+
+#define SUCCESS 0
+#define FAIL_CANT_OPEN_FILE -1
+#define FAIL_CANT_WRITE_DATA -2
+#define FAIL_CANT_READ_DATA -3
+#define FAIL_INVALID_MAGIC_NUMBER -4
+#define FAIL_INVALID_ARCHIVE_PAYLOAD -5

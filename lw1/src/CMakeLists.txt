@@ -10,6 +10,7 @@ add_executable(lcma
 	unarchiver.c
 	fileutils.c
 	password.c
+	streamutils.c
 )
 
 target_include_directories(lcma PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

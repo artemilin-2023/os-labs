@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "fileutils.h": "c"
+        "fileutils.h": "c",
+        "constants.h": "c"
     }
 }
