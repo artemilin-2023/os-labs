@@ -53,7 +53,14 @@ int main(int argc, char **argv) {
 		rc = archive_extract(extract, outdir, &pw);
 	}
 	password_destroy(&pw);
-	printf("done");
+	if (rc == 0)
+	{
+		printf("done");
+	}
+	else
+	{
+		printf("failure");
+	}
 	return rc == 0 ? 0 : 1;
 }
 

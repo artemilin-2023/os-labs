@@ -9,6 +9,8 @@
 #include "password.h"
 
 int read_metadata(FILE *in, lcma_file_metadata_t *m);
+int check_pass(FILE *in, const lcma_archive_header_t *hdr, const lcma_password_t *password);
+lcma_file_metadata_t *get_file_metadatas(FILE *in, const lcma_archive_header_t *hdr);
 
 int archive_extract(const char *archive_path, const char *output_dir, const lcma_password_t *password) {
 	FILE *in = fopen(archive_path, "rb");
@@ -25,57 +27,15 @@ int archive_extract(const char *archive_path, const char *output_dir, const lcma
 		return FAIL_INVALID_MAGIC_NUMBER;
 	}
 
-	size_t pass_len;
-	if (fread(&pass_len, sizeof(pass_len), 1, in) != 1)
+	if (check_pass(in, &hdr, password) != SUCCESS)
 	{
 		fclose(in);
-		return FAIL_INVALID_HEADER;
-	}
-	
-	char *readed_password = malloc(pass_len + 1);
-	if (fread(readed_password, 1, pass_len, in) != pass_len)
-	{
-		fclose(in);
-		return FAIL_INVALID_HEADER;
-	}
-	readed_password[pass_len] = '\0';
-	if (hdr.flags & LCMA_FLAG_PASSWORD)
-	{
-		if (!password || !password->data)
-		{
-			printf("password required but not provided\n");
-			free(readed_password);
-			fclose(in);
-			return FAIL_INVALID_PASSWORD;
-		}
-		
-		if (strcmp(password->data, readed_password) != 0)
-		{
-			printf("invalid password\n");
-			free(readed_password);
-			fclose(in);
-			return FAIL_INVALID_PASSWORD;
-		}
+		return FAIL_INVALID_PASSWORD;
 	}
 
 	create_dirs(output_dir);
 
-	lcma_file_metadata_t *metadatas = malloc(hdr.file_count * sizeof(lcma_file_metadata_t));
-	for (int i = 0; i < hdr.file_count; i++)
-	{
-		lcma_file_metadata_t file_metadata = {0};
-		if (read_metadata(in, &file_metadata) != SUCCESS)
-		{
-			for (int j = 0; j < i; j++) {
-				free(metadatas[j].name);
-			}
-			fclose(in);
-			free(metadatas);
-			return FAIL_INVALID_HEADER;
-		}
-		
-		metadatas[i] = file_metadata;
-	}
+	lcma_file_metadata_t *metadatas = get_file_metadatas(in, &hdr);
 
 	for (int i = 0; i < hdr.file_count; i++)
 	{
@@ -126,9 +86,70 @@ int archive_extract(const char *archive_path, const char *output_dir, const lcma
 		free(metadatas[i].name);
 	}
 	free(metadatas);
-	free(readed_password);
 	fclose(in);
 	return SUCCESS;
+}
+
+int check_pass(FILE *in, const lcma_archive_header_t *hdr, const lcma_password_t *password)
+{
+    size_t pass_len;
+	if (fread(&pass_len, sizeof(pass_len), 1, in) != 1)
+	{
+		fclose(in);
+		return FAIL_INVALID_HEADER;
+	}
+	
+	char *readed_password = malloc(pass_len + 1);
+	if (fread(readed_password, 1, pass_len, in) != pass_len)
+	{
+		fclose(in);
+		return FAIL_INVALID_HEADER;
+	}
+	readed_password[pass_len] = '\0';
+	
+	if (hdr->flags & LCMA_FLAG_PASSWORD)
+	{
+		if (!password || !password->data)
+		{
+			printf("password required but not provided\n");
+			free(readed_password);
+			fclose(in);
+			return FAIL_INVALID_PASSWORD;
+		}
+		
+		if (strcmp(password->data, readed_password) != 0)
+		{
+			printf("invalid password\n");
+			free(readed_password);
+			fclose(in);
+			return FAIL_INVALID_PASSWORD;
+		}
+	}
+
+	free(readed_password);
+	return SUCCESS;
+}
+
+lcma_file_metadata_t *get_file_metadatas(FILE *in, const lcma_archive_header_t *hdr)
+{
+	lcma_file_metadata_t *metadatas = malloc(hdr->file_count * sizeof(lcma_file_metadata_t));
+	for (int i = 0; i < hdr->file_count; i++)
+	{
+		lcma_file_metadata_t file_metadata = {0};
+		if (read_metadata(in, &file_metadata) != SUCCESS)
+		{
+			for (int j = 0; j < i; j++) {
+				free(metadatas[j].name);
+			}
+			fclose(in);
+			free(metadatas);
+			return FAIL_INVALID_HEADER;
+		}
+		
+		metadatas[i] = file_metadata;
+	}
+
+	return metadatas;
 }
 
 int read_metadata(FILE *in, lcma_file_metadata_t *m) {
